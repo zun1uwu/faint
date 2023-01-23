@@ -1,0 +1,2 @@
+[workspace]
+members = ["faint_locker", "faint_unlocker"]
