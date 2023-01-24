@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use reqwest::blocking::Client;
 use std::{collections, fs, io::Write, path};
