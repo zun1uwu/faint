@@ -19,13 +19,14 @@ pub fn decrypt(file: &path::PathBuf, customer: &Customer) {
                 libaes::Cipher::new_256(customer.keypair.key.as_bytes().try_into().unwrap());
             let decrypted = cipher.cbc_decrypt(customer.keypair.iv.as_bytes(), &file_content);
             if fs::write(file, decrypted).is_ok() {
-                fs::rename(
+                if fs::rename(
                     file,
                     file.to_string_lossy()
                         .split_at(file.to_string_lossy().len() - 6)
                         .0,
                 )
-                .unwrap();
+                .is_ok()
+                {}
             }
         }
     };
