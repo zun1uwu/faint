@@ -1,2 +1,8 @@
 [workspace]
 members = ["faint_locker", "faint_unlocker"]
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
